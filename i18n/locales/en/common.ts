@@ -1,0 +1,87 @@
+// Translations for English
+export default {
+  "nav": {
+    "home": "Home",
+    "tools": "Tools",
+    "upload": "Upload Tool",
+    "requests": "Requests",
+    "deploy": "Deploy Guides",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "profile": "Profile",
+    "myTools": "My Tools",
+    "myRequests": "My Requests"
+  },
+  "hero": {
+    "title": "Teacher Toolbox",
+    "subtitle": "Discover, Share, Create Teaching Tools",
+    "description": "A platform designed for educators. Browse teaching tools created by teachers and developers worldwide, or share your own creations.",
+    "ctaBrowse": "Browse Tools",
+    "ctaUpload": "Upload Tool"
+  },
+  "search": {
+    "placeholder": "Search tools...",
+    "button": "Search"
+  },
+  "categories": {
+    "title": "Browse by Category",
+    "math": "Mathematics",
+    "chinese": "Chinese",
+    "english": "English",
+    "science": "Science",
+    "programming": "Programming",
+    "admin": "Administration",
+    "classroom": "Classroom Management",
+    "ai": "AI Assist"
+  },
+  "tool": {
+    "useTool": "Use Tool",
+    "author": "Author",
+    "category": "Category",
+    "tags": "Tags",
+    "grades": "Grade Levels",
+    "subjects": "Subjects",
+    "views": "Views",
+    "rating": "Rating",
+    "reviews": "Reviews",
+    "report": "Report",
+    "share": "Share",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite"
+  },
+  "upload": {
+    "title": "Upload Tool",
+    "name": "Tool Name",
+    "nameEn": "English Name",
+    "nameZh": "Chinese Name",
+    "description": "Description",
+    "descEn": "English Description",
+    "descZh": "Chinese Description",
+    "url": "Tool URL",
+    "urlPlaceholder": "https://your-tool.vercel.app",
+    "category": "Category",
+    "thumbnail": "Thumbnail",
+    "instructions": "Instructions",
+    "submit": "Submit",
+    "cancel": "Cancel"
+  },
+  "request": {
+    "title": "Request Board",
+    "newRequest": "New Request",
+    "upvote": "Upvote",
+    "status": {
+      "open": "Open",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    }
+  },
+  "footer": {
+    "tagline": "A tool-sharing platform for educators",
+    "links": "Links",
+    "about": "About Us",
+    "contact": "Contact",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Use"
+  }
+};

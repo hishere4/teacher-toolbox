@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?
+  name          String
+  image         String?
+  role          UserRole  @default(TEACHER)
+  school        String?
+  subjects      String[]
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  tools         Tool[]
+  reviews       Review[]
+  favorites     Favorite[]
+  requests      Request[]
+  requestVotes  RequestVote[]
+  claims        Request[]          @relation("ClaimedRequests")
+  reports       Report[]
+
+  @@map("users")
+}
+
+model Tool {
+  id            String      @id @default(cuid())
+  slug          String      @unique
+  titleEn       String      @map("title_en")
+  titleZh       String      @map("title_zh")
+  descEn        String      @map("desc_en")
+  descZh        String      @map("desc_zh")
+  externalUrl   String      @map("external_url")
+  thumbnail     String?
+  status        ToolStatus  @default(PUBLISHED)
+  viewCount     Int         @default(0) @map("view_count")
+  gradeLevels   String[]    @map("grade_levels")
+  subjects      String[]
+  tags          String[]
+  instructions  String?
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  authorId      String      @map("author_id")
+  author        User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categoryId    String      @map("category_id")
+  category      Category    @relation(fields: [categoryId], references: [id])
+  reviews       Review[]
+  favorites     Favorite[]
+  reports       Report[]
+  completedRequests Request[] @relation("CompletedRequest")
+
+  @@map("tools")
+}
+
+model Category {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  nameEn        String    @map("name_en")
+  nameZh        String    @map("name_zh")
+  icon          String?
+  sortOrder     Int       @default(0) @map("sort_order")
+  
+  tools         Tool[]
+
+  @@map("categories")
+}
+
+model Review {
+  id            String    @id @default(cuid())
+  rating        Int
+  comment       String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  toolId        String    @map("tool_id")
+  tool          Tool      @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  userId        String    @map("user_id")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([toolId, userId])
+  @@map("reviews")
+}
+
+model Favorite {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  userId        String    @map("user_id")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolId        String    @map("tool_id")
+  tool          Tool      @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, toolId])
+  @@map("favorites")
+}
+
+model Request {
+  id              String          @id @default(cuid())
+  titleEn         String          @map("title_en")
+  titleZh         String          @map("title_zh")
+  descEn          String          @map("desc_en")
+  descZh          String          @map("desc_zh")
+  status          RequestStatus   @default(OPEN)
+  gradeLevels     String[]        @map("grade_levels")
+  subjects        String[]
+  upvotes         Int             @default(0)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  authorId        String          @map("author_id")
+  author          User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  claimedById     String?         @map("claimed_by_id")
+  claimedBy       User?           @relation("ClaimedRequests", fields: [claimedById], references: [id])
+  completedToolId String?         @map("completed_tool_id")
+  completedTool   Tool?           @relation(name: "CompletedRequest", fields: [completedToolId], references: [id])
+  votes           RequestVote[]
+  comments        RequestComment[]
+
+  @@map("requests")
+}
+
+model RequestVote {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  requestId     String    @map("request_id")
+  request       Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  userId        String    @map("user_id")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, userId])
+  @@map("request_votes")
+}
+
+model RequestComment {
+  id            String    @id @default(cuid())
+  content       String
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  requestId     String    @map("request_id")
+  request       Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  authorId      String    @map("author_id")
+
+  @@map("request_comments")
+}
+
+model Report {
+  id            String        @id @default(cuid())
+  reason        ReportReason
+  description   String?
+  status        ReportStatus  @default(PENDING)
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  toolId        String        @map("tool_id")
+  tool          Tool          @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  reporterId    String        @map("reporter_id")
+  reporter      User          @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+model DeployGuide {
+  id                String    @id @default(cuid())
+  slug              String    @unique
+  titleEn           String    @map("title_en")
+  titleZh           String    @map("title_zh")
+  platform          String
+  contentEn         String    @map("content_en")
+  contentZh         String    @map("content_zh")
+  difficulty        Difficulty @default(BEGINNER)
+  estimatedTime     String?   @map("estimated_time")
+  externalResources Json?     @map("external_resources")
+  sortOrder         Int       @default(0) @map("sort_order")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("deploy_guides")
+}
+
+enum UserRole {
+  TEACHER
+  CREATOR
+  ADMIN
+}
+
+enum ToolStatus {
+  PUBLISHED
+  HIDDEN
+  UNDER_REVIEW
+}
+
+enum RequestStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ReportReason {
+  NOT_WORKING
+  INAPPROPRIATE
+  SPAM
+  COPYRIGHT
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
