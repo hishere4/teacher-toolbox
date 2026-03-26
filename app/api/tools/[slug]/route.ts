@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getToolBySlug, tools } from "@/lib/data";
+import { getToolBySlug, incrementToolViews } from "@/lib/db";
 
 export async function GET(
   req: Request,
@@ -7,17 +7,25 @@ export async function GET(
 ) {
   const { slug } = params;
   
-  const tool = getToolBySlug(slug);
-  
-  if (!tool) {
+  try {
+    const tool = await getToolBySlug(slug);
+    
+    if (!tool) {
+      return NextResponse.json(
+        { error: "Tool not found" },
+        { status: 404 }
+      );
+    }
+
+    // Increment view count asynchronously
+    incrementToolViews(slug).catch(console.error);
+
+    return NextResponse.json({ tool });
+  } catch (error) {
+    console.error("Failed to fetch tool:", error);
     return NextResponse.json(
-      { error: "Tool not found" },
-      { status: 404 }
+      { error: "Failed to fetch tool" },
+      { status: 500 }
     );
   }
-
-  // Increment view count (in-memory only for now)
-  tool.viewCount += 1;
-
-  return NextResponse.json({ tool });
 }

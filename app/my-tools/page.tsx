@@ -37,13 +37,10 @@ export default function MyToolsPage() {
 
   const fetchMyTools = async () => {
     try {
-      // Fetch all tools and filter by author
-      const res = await fetch("/api/tools");
+      // Use the dedicated my-tools API
+      const res = await fetch(`/api/my-tools?userId=${session?.user?.id}`);
       const data = await res.json();
-      const myTools = (data.tools || []).filter(
-        (t: Tool) => t.authorId === session?.user?.id
-      );
-      setTools(myTools);
+      setTools(data.tools || []);
     } catch (error) {
       console.error("Failed to fetch tools:", error);
     } finally {

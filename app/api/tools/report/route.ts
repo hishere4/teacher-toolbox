@@ -1,14 +1,5 @@
 import { NextResponse } from "next/server";
-
-// In-memory reports storage
-const reports: Array<{
-  id: string;
-  toolId: string;
-  reporterId: string;
-  reason: string;
-  status: string;
-  createdAt: string;
-}> = [];
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
@@ -28,18 +19,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const report = {
-      id: Math.random().toString(36).substr(2, 9),
-      toolId,
-      reporterId: userId,
-      reason,
-      status: "PENDING",
-      createdAt: new Date().toISOString(),
-    };
-
-    reports.push(report);
-
-    console.log("New report:", report);
+    // Create report in database
+    await prisma.report.create({
+      data: {
+        toolId,
+        reporterId: userId,
+        reason,
+        status: 'PENDING',
+      },
+    });
 
     return NextResponse.json(
       { message: "舉報成功" },
@@ -53,5 +41,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-export { reports };

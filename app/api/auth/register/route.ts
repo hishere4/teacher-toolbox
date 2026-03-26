@@ -1,16 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-
-// TODO: Connect to real database in Phase 3
-// For now, we'll store users in memory for testing
-const users: Array<{
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-  school?: string;
-  role: string;
-}> = [];
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
@@ -32,7 +22,10 @@ export async function POST(req: Request) {
     }
 
     // Check if user already exists
-    const existingUser = users.find((u) => u.email === email);
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
     if (existingUser) {
       return NextResponse.json(
         { message: "此電郵已被註冊" },
@@ -44,20 +37,15 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const user = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      email,
-      password: hashedPassword,
-      school: school || null,
-      role: "TEACHER",
-    };
-
-    users.push(user);
-
-    // Log for debugging
-    console.log("User registered:", { id: user.id, email: user.email });
-    console.log("Total users:", users.length);
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        school: school || null,
+        role: "TEACHER",
+      },
+    });
 
     return NextResponse.json(
       { message: "註冊成功", userId: user.id },
@@ -71,6 +59,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-// Export users for auth purposes (in-memory only)
-export { users };
