@@ -8,7 +8,7 @@ import {
   ChevronLeft, 
   Clock, 
   CheckCircle2,
-  Github,
+  Code2,
   ExternalLink
 } from "lucide-react";
 
@@ -24,7 +24,7 @@ export default function GitHubPagesGuidePage() {
 
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center">
-              <Github className="h-8 w-8 text-gray-700" />
+              <Code2 className="h-8 w-8 text-gray-700" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">

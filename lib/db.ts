@@ -1,23 +1,28 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "./prisma";
+import { categories as localCategories, tools as localTools } from "./data";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+// Check if database is available
+const isDatabaseAvailable = !!process.env.DATABASE_URL;
 
 // Category operations
 export async function getCategories() {
-  return prisma.category.findMany({
-    orderBy: { sortOrder: 'asc' },
-    include: {
-      _count: {
-        select: { tools: true }
+  if (!isDatabaseAvailable) {
+    return localCategories;
+  }
+  
+  try {
+    return await prisma.category.findMany({
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        _count: {
+          select: { tools: true }
+        }
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.warn("Database not available, using local data");
+    return localCategories;
+  }
 }
 
 // Tool operations
@@ -32,90 +37,169 @@ export async function getTools({
   sort?: 'popular' | 'latest';
   limit?: number;
 }) {
-  const where: any = { status: 'PUBLISHED' };
-  
-  if (category) {
-    where.category = { slug: category };
-  }
-  
-  if (search) {
-    where.OR = [
-      { titleZh: { contains: search, mode: 'insensitive' } },
-      { descZh: { contains: search, mode: 'insensitive' } },
-    ];
-  }
-  
-  const orderBy = sort === 'latest' 
-    ? { createdAt: 'desc' } 
-    : { viewCount: 'desc' };
-  
-  return prisma.tool.findMany({
-    where,
-    orderBy,
-    take: limit,
-    include: {
-      author: {
-        select: { id: true, name: true, image: true }
-      },
-      category: {
-        select: { id: true, nameEn: true, nameZh: true, slug: true }
-      },
-      _count: {
-        select: { reviews: true, favorites: true }
+  if (!isDatabaseAvailable) {
+    let result = [...localTools];
+    
+    if (category) {
+      const cat = localCategories.find(c => c.slug === category);
+      if (cat) {
+        result = result.filter(t => t.categoryId === cat.id);
       }
     }
-  });
+    
+    if (search) {
+      const lowerSearch = search.toLowerCase();
+      result = result.filter(t => 
+        t.titleZh.toLowerCase().includes(lowerSearch) ||
+        t.descZh.toLowerCase().includes(lowerSearch)
+      );
+    }
+    
+    if (sort === 'latest') {
+      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else {
+      result.sort((a, b) => b.viewCount - a.viewCount);
+    }
+    
+    return result.slice(0, limit);
+  }
+  
+  try {
+    const where: any = { status: 'PUBLISHED' };
+    
+    if (category) {
+      where.category = { slug: category };
+    }
+    
+    if (search) {
+      where.OR = [
+        { titleZh: { contains: search, mode: 'insensitive' } },
+        { descZh: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    
+    const orderBy = sort === 'latest' 
+      ? { createdAt: 'desc' } 
+      : { viewCount: 'desc' };
+    
+    return await prisma.tool.findMany({
+      where,
+      orderBy,
+      take: limit,
+      include: {
+        author: {
+          select: { id: true, name: true, image: true }
+        },
+        category: {
+          select: { id: true, nameEn: true, nameZh: true, slug: true }
+        },
+        _count: {
+          select: { reviews: true, favorites: true }
+        }
+      }
+    });
+  } catch (error) {
+    console.warn("Database not available, using local data");
+    return localTools;
+  }
 }
 
 export async function getToolBySlug(slug: string) {
-  return prisma.tool.findUnique({
-    where: { slug },
-    include: {
-      author: {
-        select: { id: true, name: true, image: true }
-      },
-      category: {
-        select: { id: true, nameEn: true, nameZh: true, slug: true }
-      },
-      _count: {
-        select: { reviews: true, favorites: true }
+  if (!isDatabaseAvailable) {
+    return localTools.find(t => t.slug === slug) || null;
+  }
+  
+  try {
+    return await prisma.tool.findUnique({
+      where: { slug },
+      include: {
+        author: {
+          select: { id: true, name: true, image: true }
+        },
+        category: {
+          select: { id: true, nameEn: true, nameZh: true, slug: true }
+        },
+        _count: {
+          select: { reviews: true, favorites: true }
+        }
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.warn("Database not available, using local data");
+    return localTools.find(t => t.slug === slug) || null;
+  }
 }
 
 export async function incrementToolViews(slug: string) {
-  return prisma.tool.update({
-    where: { slug },
-    data: { viewCount: { increment: 1 } }
-  });
+  if (!isDatabaseAvailable) {
+    const tool = localTools.find(t => t.slug === slug);
+    if (tool) {
+      tool.viewCount += 1;
+    }
+    return tool;
+  }
+  
+  try {
+    return await prisma.tool.update({
+      where: { slug },
+      data: { viewCount: { increment: 1 } }
+    });
+  } catch (error) {
+    console.warn("Database not available");
+    return null;
+  }
 }
 
 export async function createTool(data: any) {
-  return prisma.tool.create({
-    data,
-    include: {
-      author: {
-        select: { id: true, name: true, image: true }
-      },
-      category: {
-        select: { id: true, nameEn: true, nameZh: true, slug: true }
+  if (!isDatabaseAvailable) {
+    const newTool = {
+      id: Math.random().toString(36).substr(2, 9),
+      ...data,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    localTools.unshift(newTool as any);
+    return newTool;
+  }
+  
+  try {
+    return await prisma.tool.create({
+      data,
+      include: {
+        author: {
+          select: { id: true, name: true, image: true }
+        },
+        category: {
+          select: { id: true, nameEn: true, nameZh: true, slug: true }
+        }
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.error("Failed to create tool:", error);
+    throw error;
+  }
 }
 
 export async function getToolsByUser(userId: string) {
-  return prisma.tool.findMany({
-    where: { authorId: userId },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      category: {
-        select: { id: true, nameEn: true, nameZh: true, slug: true }
-      },
-      _count: {
-        select: { reviews: true, favorites: true }
+  if (!isDatabaseAvailable) {
+    return localTools.filter(t => t.authorId === userId);
+  }
+  
+  try {
+    return await prisma.tool.findMany({
+      where: { authorId: userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        category: {
+          select: { id: true, nameEn: true, nameZh: true, slug: true }
+        },
+        _count: {
+          select: { reviews: true, favorites: true }
+        }
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.warn("Database not available, using local data");
+    return localTools.filter(t => t.authorId === userId);
+  }
 }

@@ -6,10 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   Rocket, 
-  Github, 
+  Code2, 
   Cloud, 
   Terminal, 
-  Code2, 
   Database,
   Clock,
   BarChart3,
@@ -34,7 +33,7 @@ const platforms = [
     title: "GitHub Pages",
     titleZh: "GitHub 頁面",
     description: "免費托管靜態網站，適合純 HTML/CSS/JS 工具。與 GitHub 倉庫完美整合。",
-    icon: Github,
+    icon: Code2,
     difficulty: "入門",
     difficultyColor: "bg-green-100 text-green-700",
     time: "10 分鐘",

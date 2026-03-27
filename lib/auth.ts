@@ -2,9 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
-
-// Import in-memory users from register route
-import { users } from "@/app/api/auth/register/route";
+import { prisma } from "@/lib/prisma";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -23,10 +21,12 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // Find user in memory
-        const user = users.find((u) => u.email === credentials.email);
+        // Find user from database
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
 
-        if (!user) {
+        if (!user || !user.password) {
           return null;
         }
 
@@ -41,7 +41,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
-          image: null,
+          image: user.image,
           role: user.role,
         };
       },

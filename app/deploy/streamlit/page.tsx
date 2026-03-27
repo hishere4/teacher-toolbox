@@ -11,7 +11,7 @@ import {
   AlertCircle,
   ExternalLink,
   Cloud,
-  Github
+  Code2
 } from "lucide-react";
 
 export default function StreamlitGuidePage() {
@@ -162,7 +162,7 @@ numpy
                 
                 <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
                   <p className="text-sm text-blue-700">
-                    <strong>💡 提示：</strong> 可以用 pip freeze > requirements.txt 生成依賴列表
+                    <strong>💡 提示：</strong> 可以用 pip freeze {'>'} requirements.txt 生成依賴列表
                   </p>
                 </div>
               </CardContent>
@@ -311,7 +311,7 @@ numpy
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm hover:text-primary"
                 >
-                  <Github className="h-4 w-4" />
+                  <Code2 className="h-4 w-4" />
                   創建 GitHub 倉庫
                 </a>
               </CardContent>
