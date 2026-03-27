@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   ExternalLink, 
   Heart, 
@@ -16,24 +18,46 @@ import {
   Calendar,
   Wrench,
   ChevronLeft,
-  Star
+  Star,
+  MessageSquare
 } from "lucide-react";
 import { Tool } from "@/types";
 import { ReportDialog } from "@/components/tools/ReportDialog";
 
+interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    image: string | null;
+  };
+}
+
 export default function ToolDetailPage() {
+  const { data: session } = useSession();
   const params = useParams();
   const slug = params.slug as string;
   
   const [tool, setTool] = useState<Tool | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [favorited, setFavorited] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
 
   useEffect(() => {
     if (slug) {
       fetchTool();
+      fetchReviews();
+      if (session?.user?.id) {
+        checkFavorite();
+      }
     }
-  }, [slug]);
+  }, [slug, session]);
 
   const fetchTool = async () => {
     try {
@@ -47,6 +71,83 @@ export default function ToolDetailPage() {
       setError("找不到此工具");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const res = await fetch(`/api/tools/${slug}/reviews`);
+      const data = await res.json();
+      setReviews(data.reviews || []);
+    } catch (error) {
+      console.error("Failed to fetch reviews:", error);
+    }
+  };
+
+  const checkFavorite = async () => {
+    if (!session?.user?.id) return;
+    try {
+      const res = await fetch(`/api/tools/${slug}/favorite?userId=${session.user.id}`);
+      const data = await res.json();
+      setFavorited(data.favorited);
+    } catch (error) {
+      console.error("Failed to check favorite:", error);
+    }
+  };
+
+  const handleFavorite = async () => {
+    if (!session?.user?.id) {
+      alert("請先登入");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/tools/${slug}/favorite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: session.user.id }),
+      });
+      const data = await res.json();
+      setFavorited(data.favorited);
+      // Update tool count
+      if (tool) {
+        setTool({
+          ...tool,
+          _count: {
+            ...tool._count,
+            favorites: data.favorited 
+              ? (tool._count?.favorites || 0) + 1 
+              : (tool._count?.favorites || 0) - 1
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Favorite error:", error);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!session?.user?.id) {
+      alert("請先登入");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/tools/${slug}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          rating: reviewRating, 
+          comment: reviewComment,
+          userId: session.user.id 
+        }),
+      });
+      if (res.ok) {
+        setReviewComment("");
+        setReviewRating(5);
+        fetchReviews();
+        fetchTool();
+      }
+    } catch (error) {
+      console.error("Review error:", error);
     }
   };
 
@@ -166,6 +267,75 @@ export default function ToolDetailPage() {
                 ))}
               </div>
             </div>
+
+            {/* Reviews Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  評論 ({reviews.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Write Review */}
+                {session && (
+                  <div className="space-y-3 pb-6 border-b">
+                    <h4 className="font-medium">寫下你嘅評論</h4>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => setReviewRating(star)}
+                          className={`p-1 ${star <= reviewRating ? 'text-yellow-500' : 'text-gray-300'}`}
+                        >
+                          <Star className="h-6 w-6 fill-current" />
+                        </button>
+                      ))}
+                    </div>
+                    <Textarea
+                      placeholder="分享你對呢個工具嘅評價..."
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      rows={3}
+                    />
+                    <Button onClick={handleSubmitReview}>提交評論</Button>
+                  </div>
+                )}
+
+                {/* Reviews List */}
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <User className="h-4 w-4" />
+                          </div>
+                          <span className="font-medium">{review.user.name}</span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(review.createdAt).toLocaleDateString("zh-HK")}
+                        </span>
+                      </div>
+                      <div className="flex gap-1 mb-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-4 w-4 ${star <= review.rating ? 'text-yellow-500 fill-current' : 'text-gray-300'}`}
+                          />
+                        ))}
+                      </div>
+                      {review.comment && (
+                        <p className="text-muted-foreground">{review.comment}</p>
+                      )}
+                    </div>
+                  ))}
+                  {reviews.length === 0 && (
+                    <p className="text-center text-muted-foreground py-4">暫時沒有評論，成為第一個評論嘅人！</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Sidebar */}
@@ -181,9 +351,13 @@ export default function ToolDetailPage() {
                 </a>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 gap-2">
-                    <Heart className="h-4 w-4" />
-                    收藏
+                  <Button 
+                    variant={favorited ? "default" : "outline"} 
+                    className="flex-1 gap-2"
+                    onClick={handleFavorite}
+                  >
+                    <Heart className={`h-4 w-4 ${favorited ? 'fill-current' : ''}`} />
+                    {favorited ? '已收藏' : '收藏'}
                   </Button>
                   <Button variant="outline" className="flex-1 gap-2" onClick={handleShare}>
                     <Share2 className="h-4 w-4" />
