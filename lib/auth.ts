@@ -2,7 +2,9 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+
+// In-memory users for fallback when database is not available
+const memoryUsers: any[] = [];
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -21,10 +23,23 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // Find user from database
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+        // Try to find user from memory first
+        let user = memoryUsers.find((u) => u.email === credentials.email);
+
+        // If not in memory, check if database is available
+        if (!user && process.env.DATABASE_URL) {
+          try {
+            const { prisma } = await import("@/lib/prisma");
+            const dbUser = await prisma.user.findUnique({
+              where: { email: credentials.email },
+            });
+            if (dbUser) {
+              user = dbUser;
+            }
+          } catch (error) {
+            console.warn("Database not available, using memory");
+          }
+        }
 
         if (!user || !user.password) {
           return null;
@@ -42,7 +57,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           image: user.image,
-          role: user.role,
+          role: user.role || "TEACHER",
         };
       },
     }),
@@ -71,3 +86,5 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
 };
+
+export { memoryUsers };

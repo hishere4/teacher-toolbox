@@ -1,3 +1,4 @@
+// Database operations with fallback to local data
 import { prisma } from "./prisma";
 import { categories as localCategories, tools as localTools } from "./data";
 
@@ -145,7 +146,7 @@ export async function incrementToolViews(slug: string) {
       data: { viewCount: { increment: 1 } }
     });
   } catch (error) {
-    console.warn("Database not available");
+    console.warn("Database error");
     return null;
   }
 }
