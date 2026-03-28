@@ -14,6 +14,7 @@ const t = (key: string) => {
     "nav.tools": "工具市場",
     "nav.requests": "請求板",
     "nav.deploy": "部署教學",
+    "nav.learn": "學習編程",
     "nav.login": "登入",
     "nav.register": "註冊",
     "nav.logout": "登出",
@@ -37,6 +38,7 @@ export function Header() {
     { href: "/tools", label: t("nav.tools") },
     { href: "/requests", label: t("nav.requests") },
     { href: "/deploy", label: t("nav.deploy") },
+    { href: "/learn", label: t("nav.learn") },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
