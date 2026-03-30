@@ -82,8 +82,8 @@ export default function UploadPage() {
               <li className="flex items-start gap-2">
                 <span className="font-bold">1.</span>
                 <div>
-                  去 <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="underline font-medium">Claude.ai</a>
-                  <span className="text-xs block text-blue-600 mt-0.5">（免費，唔使科學上網）</span>
+                  去 <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">Gemini</a>
+                  <span className="text-xs block text-blue-600 mt-0.5">（Google 帳戶即可使用）</span>
                 </div>
               </li>
               <li className="flex items-start gap-2">
