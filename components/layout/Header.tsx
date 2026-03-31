@@ -15,7 +15,8 @@ export function Header() {
 
   const navLinks = [
     { href: "/tools", label: "搵工具" },
-    { href: "/upload", label: "上載工具" },
+    { href: "/learn", label: "點整" },
+    { href: "/upload", label: "上載" },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
